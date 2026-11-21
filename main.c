@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    validar_enderecos(arq);
+    validar_enderecos(arq, alg_pagina, alg_tlb);
     fclose(arq);
     return 0;
 }

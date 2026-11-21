@@ -8,5 +8,5 @@
 #define TAM_PAGINA   256
 #define NUM_FRAMES   128
 
-int validar_enderecos(FILE *arq);
+int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb);
 #endif

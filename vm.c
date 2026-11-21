@@ -3,7 +3,9 @@
 #include "vm.h"
 #include <string.h>
 
-int validar_enderecos(FILE *arq){
+int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
+    printf("alg_pagina = %d\n", alg_pagina);
+    printf("alg_tlb = %d\n", alg_tlb);
     char linha[256];
     int count = 0, numLinha = 0;
     char *pedaco, *fim;
@@ -39,8 +41,8 @@ int validar_enderecos(FILE *arq){
     
     rewind(arq);
 
-    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, fisico, dado, fifo = 0, pagina_antiga;
-    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES];
+    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, fisico, dado, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido;
+    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES], horas[NUM_FRAMES];
     signed char memoria[TAM_PAGINA * NUM_FRAMES];
 
     for(int i=0; i<NUM_PAGINAS; i++){
@@ -87,8 +89,25 @@ int validar_enderecos(FILE *arq){
                 }
 
                 else{
-                    frame = fifo;
-                    fifo = (fifo + 1) % NUM_FRAMES;
+                    if(alg_pagina == FIFO){
+                        frame = fifo;
+                        fifo = (fifo + 1) % NUM_FRAMES;
+                    }
+
+                    else{
+                        menor = horas[0];
+                        escolhido = 0;
+
+                        for(int i=0; i<NUM_FRAMES; i++){
+                            if(horas[i] < menor){
+                                menor = horas[i];
+                                escolhido = i;
+                            }
+                        }
+
+                        frame = escolhido;
+                    }
+
                     pagina_antiga = etiqueta[frame];
                     tabela_pagina[pagina_antiga] = -1;
                 }
@@ -101,7 +120,9 @@ int validar_enderecos(FILE *arq){
             }
         }
 
+        relogio++;
         fisico = frame * 256 + offset;
+        horas[frame] = relogio;
         dado = memoria[fisico];
 
         printf("Virtual address: %ld Physical address: %d Value: %d\n", valor, fisico, dado);
