@@ -39,8 +39,8 @@ int validar_enderecos(FILE *arq){
     
     rewind(arq);
 
-    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, fisico, dado;
-    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS];
+    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, fisico, dado, fifo = 0, pagina_antiga;
+    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES];
     signed char memoria[TAM_PAGINA * NUM_FRAMES];
 
     for(int i=0; i<NUM_PAGINAS; i++){
@@ -80,9 +80,21 @@ int validar_enderecos(FILE *arq){
 
             if(frame == -1){
                 page_fault++;
-                frame = proximo_frame;
-                proximo_frame++;
+                
+                if(proximo_frame < NUM_FRAMES){
+                    frame = proximo_frame;
+                    proximo_frame++;
+                }
+
+                else{
+                    frame = fifo;
+                    fifo = (fifo + 1) % NUM_FRAMES;
+                    pagina_antiga = etiqueta[frame];
+                    tabela_pagina[pagina_antiga] = -1;
+                }
+
                 tabela_pagina[pagina] = frame;
+                etiqueta[frame] = pagina;
 
                 fseek(disco, pagina * 256, SEEK_SET);
                 fread(&memoria[frame * 256], 1, 256, disco);
