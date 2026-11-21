@@ -41,7 +41,10 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
     
     rewind(arq);
 
-    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, fisico, dado, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido;
+    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, 
+    fisico, dado, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido, linhaTLB, 
+    fifoTLB = 0, tlb_hits = 0;
+
     int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES], horas[NUM_FRAMES];
     signed char memoria[TAM_PAGINA * NUM_FRAMES];
 
@@ -73,6 +76,7 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
             if(tlb_paginas[i] == pagina){
                 posicao_tlb = i;
                 frame = tlb_frame[i];
+                tlb_hits++;
                 break;
             }
         }
@@ -118,6 +122,19 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
                 fseek(disco, pagina * 256, SEEK_SET);
                 fread(&memoria[frame * 256], 1, 256, disco);
             }
+
+            if(tlb_ocupado < TAM_TLB){
+                linhaTLB = tlb_ocupado;
+                tlb_ocupado++;
+            }
+
+            else{
+                linhaTLB = fifoTLB;
+                fifoTLB = (fifoTLB + 1) % TAM_TLB;
+            }
+
+            tlb_paginas[linhaTLB] = pagina;
+            tlb_frame[linhaTLB] = frame;
         }
 
         relogio++;
@@ -128,7 +145,8 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
         printf("Virtual address: %ld Physical address: %d Value: %d\n", valor, fisico, dado);
     }
 
-    printf("Page Faluts = %d\n", page_fault);
+    printf("Page Faults = %d\n", page_fault);
+    printf("TLB Hits = %d\n", tlb_hits);
     fclose(disco);
     return count;
 }
