@@ -17,9 +17,9 @@ int main(int argc, char *argv[]) {
     }
     
     if(strcmp(argv[2], "fifo") == 0){
-        alg_tlb = FIFO;
+        alg_pagina = FIFO;
     } else{
-        alg_tlb = LRU;
+        alg_pagina = LRU;
     }
 
     if(strcmp(argv[3], "fifo") != 0 && strcmp(argv[3], "lru") != 0){
@@ -28,9 +28,9 @@ int main(int argc, char *argv[]) {
     }
 
     if(strcmp(argv[3], "fifo") == 0){
-        alg_pagina = FIFO;
+        alg_tlb = FIFO;
     } else{
-        alg_pagina = LRU;
+        alg_tlb = LRU;
     }
     
     FILE *arq = fopen(argv[1], "r");
@@ -40,7 +40,6 @@ int main(int argc, char *argv[]) {
     }
 
     validar_enderecos(arq);
-
     fclose(arq);
     return 0;
 }

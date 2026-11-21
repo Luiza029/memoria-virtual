@@ -6,17 +6,18 @@
 int validar_enderecos(FILE *arq){
     char linha[256];
     int count = 0, numLinha = 0;
+    char *pedaco, *fim;
+    long valor;
 
     while(fgets(linha, sizeof(linha), arq) != NULL){
         numLinha++;
 
-        char *pedaco = strtok(linha, " \t\r\n");
+        pedaco = strtok(linha, " \t\r\n");
         if(pedaco == NULL){
             continue;
         }    
 
-        char *fim;
-        long valor = strtol(pedaco, &fim, 10);
+        valor = strtol(pedaco, &fim, 10);
 
         if(fim == pedaco || *fim != '\0' || valor < 0 || valor > MAX){
             printf("Erro: addresses.txt tem numero invalido na linha %d\n", numLinha);
@@ -36,5 +37,65 @@ int validar_enderecos(FILE *arq){
         return -1;
     }
     
+    rewind(arq);
+
+    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, fisico, dado;
+    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS];
+    signed char memoria[TAM_PAGINA * NUM_FRAMES];
+
+    for(int i=0; i<NUM_PAGINAS; i++){
+        tabela_pagina[i] = -1;
+    }
+
+    FILE *disco = fopen("BACKING_STORE.bin", "rb");
+
+    if(disco == NULL){
+        printf("Erro: arquivo nao encontrado\n");
+        return -1;
+    }
+
+    while(fgets(linha, sizeof(linha), arq) != NULL){
+        int posicao_tlb = -1;
+
+        pedaco = strtok(linha, " \t\r\n");
+        if(pedaco == NULL){
+            continue;
+        }
+
+        valor = strtol(pedaco, NULL, 10);
+
+        pagina = valor / 256;
+        offset = valor % 256;
+
+        for(int i=0; i<tlb_ocupado; i++){
+            if(tlb_paginas[i] == pagina){
+                posicao_tlb = i;
+                frame = tlb_frame[i];
+                break;
+            }
+        }
+
+        if(posicao_tlb == -1){
+            frame = tabela_pagina[pagina];
+
+            if(frame == -1){
+                page_fault++;
+                frame = proximo_frame;
+                proximo_frame++;
+                tabela_pagina[pagina] = frame;
+
+                fseek(disco, pagina * 256, SEEK_SET);
+                fread(&memoria[frame * 256], 1, 256, disco);
+            }
+        }
+
+        fisico = frame * 256 + offset;
+        dado = memoria[fisico];
+
+        printf("Virtual address: %ld Physical address: %d Value: %d\n", valor, fisico, dado);
+    }
+
+    printf("Page Faluts = %d\n", page_fault);
+    fclose(disco);
     return count;
 }
