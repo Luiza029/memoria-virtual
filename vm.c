@@ -45,7 +45,7 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
     fisico, dado, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido, linhaTLB, 
     fifoTLB = 0, tlb_hits = 0;
 
-    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES], horas[NUM_FRAMES];
+    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES], horas[NUM_FRAMES], horasTLB[TAM_TLB];
     signed char memoria[TAM_PAGINA * NUM_FRAMES];
 
     for(int i=0; i<NUM_PAGINAS; i++){
@@ -77,6 +77,8 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
                 posicao_tlb = i;
                 frame = tlb_frame[i];
                 tlb_hits++;
+                relogio++;
+                horasTLB[i] = relogio;
                 break;
             }
         }
@@ -129,12 +131,29 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
             }
 
             else{
-                linhaTLB = fifoTLB;
-                fifoTLB = (fifoTLB + 1) % TAM_TLB;
+                if(alg_tlb == FIFO){
+                    linhaTLB = fifoTLB;
+                    fifoTLB = (fifoTLB + 1) % TAM_TLB;
+                }
+
+                else{
+                    menor = horasTLB[0];
+                    escolhido = 0;
+
+                    for(int i=0; i<TAM_TLB; i++){
+                        if(horasTLB[i] < menor){
+                            menor = horasTLB[i];
+                            escolhido = i;
+                        }
+                    }
+
+                    linhaTLB = escolhido;
+                }
             }
 
             tlb_paginas[linhaTLB] = pagina;
             tlb_frame[linhaTLB] = frame;
+            horasTLB[linhaTLB] = relogio;
         }
 
         relogio++;
