@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include "vm.h"
 #include <string.h>
+#include <pthread.h>
 
 int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
-    printf("alg_pagina = %d\n", alg_pagina);
-    printf("alg_tlb = %d\n", alg_tlb);
     char linha[256];
     int count = 0, numLinha = 0;
     char *pedaco, *fim;
@@ -42,8 +41,8 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
     rewind(arq);
 
     int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, 
-    fisico, dado, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido, linhaTLB, 
-    fifoTLB = 0, tlb_hits = 0;
+    fisico, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido, linhaTLB, 
+    fifoTLB = 0, tlb_hits = 0, dado;
 
     int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES], horas[NUM_FRAMES], horasTLB[TAM_TLB];
     signed char memoria[TAM_PAGINA * NUM_FRAMES];
@@ -55,7 +54,17 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
     FILE *disco = fopen("BACKING_STORE.bin", "rb");
 
     if(disco == NULL){
-        printf("Erro: arquivo nao encontrado\n");
+        printf("Erro: arquivo BACKING_STORE.bin nao encontrado\n");
+        return -1;
+    }
+
+    for(int i=0; i<TAM_TLB; i++){
+        tlb_paginas[i] = -1;
+    }
+
+    FILE *saida = fopen("correct.txt", "w");
+    if(saida == NULL){
+        printf("Erro: arquivo correct.txt nao encontrado\n");
         return -1;
     }
 
@@ -72,12 +81,39 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
         pagina = valor / 256;
         offset = valor % 256;
 
+        /*
         for(int i=0; i<tlb_ocupado; i++){
             if(tlb_paginas[i] == pagina){
                 posicao_tlb = i;
                 frame = tlb_frame[i];
                 tlb_hits++;
                 relogio++;
+                horasTLB[i] = relogio;
+                break;
+            }
+        }
+        */
+
+        pthread_t threads[TAM_TLB];
+        TLB bilhetes[TAM_TLB];
+
+        for(int i=0; i<TAM_TLB; i++){
+            bilhetes[i].pagina = pagina;
+            bilhetes[i].linha = i;
+            bilhetes[i].achou = 0;
+            bilhetes[i].tlbPaginas = tlb_paginas;
+            pthread_create(&threads[i], NULL, ajudante, &bilhetes[i]);
+        }
+
+        for(int i=0; i<TAM_TLB; i++){
+            pthread_join(threads[i], NULL);
+        }
+
+        for(int i=0; i<TAM_TLB; i++){
+            if(bilhetes[i].achou == 1){
+                posicao_tlb = i;
+                frame = tlb_frame[i];
+                tlb_hits++;
                 horasTLB[i] = relogio;
                 break;
             }
@@ -116,6 +152,12 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
 
                     pagina_antiga = etiqueta[frame];
                     tabela_pagina[pagina_antiga] = -1;
+
+                    for(int i=0; i<TAM_TLB; i++){
+                        if(tlb_paginas[i] == pagina_antiga){
+                            tlb_paginas[i] = -1;
+                        }
+                    }
                 }
 
                 tabela_pagina[pagina] = frame;
@@ -154,6 +196,7 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
             tlb_paginas[linhaTLB] = pagina;
             tlb_frame[linhaTLB] = frame;
             horasTLB[linhaTLB] = relogio;
+            posicao_tlb = linhaTLB;
         }
 
         relogio++;
@@ -161,11 +204,27 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
         horas[frame] = relogio;
         dado = memoria[fisico];
 
-        printf("Virtual address: %ld Physical address: %d Value: %d\n", valor, fisico, dado);
+        fprintf(saida, "Virtual address: %ld TLB: %d Physical address: %d Value: %d\n", valor, posicao_tlb, fisico, dado);
     }
 
-    printf("Page Faults = %d\n", page_fault);
-    printf("TLB Hits = %d\n", tlb_hits);
+    fprintf(saida,"Number of Translated Addresses = %d\n", count);
+
+    fprintf(saida, "Page Faults = %d\n", page_fault);
+    fprintf(saida, "Page Fault Rate = %.3f\n", (double) page_fault / count);
+
+    fprintf(saida, "TLB Hits = %d\n", tlb_hits);
+    fprintf(saida, "TLB Hit Rate = %.3f\n", (double) tlb_hits / count);
+
     fclose(disco);
     return count;
+}
+
+void *ajudante(void *arg){
+    TLB *bilhete = (TLB*) arg;
+
+    if(bilhete->tlbPaginas[bilhete->linha] == bilhete->pagina){
+        bilhete->achou = 1;
+    }
+
+    return NULL;
 }

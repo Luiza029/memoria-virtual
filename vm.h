@@ -8,5 +8,14 @@
 #define TAM_PAGINA   256
 #define NUM_FRAMES   128
 
+typedef struct TLB{
+    int pagina;
+    int linha;
+    int achou;
+    int *tlbPaginas;
+} TLB;
+
+
 int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb);
+void *ajudante(void *arg);
 #endif
