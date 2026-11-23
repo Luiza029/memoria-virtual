@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     int alg_pagina, alg_tlb;
     
     if(strcmp(argv[2], "fifo") != 0 && strcmp(argv[2], "lru") != 0){
-        printf("Erro: algoritmo invalido\n");
+        printf("Erro: algoritmo de pagina invalido (use fifo ou lru)\n");
         return 1;
     }
     
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(strcmp(argv[3], "fifo") != 0 && strcmp(argv[3], "lru") != 0){
-        printf("Erro: algoritmo invalido\n");
+        printf("Erro: algoritmo da TLB invalido (use fifo ou lru)\n");
         return 1;
     }
 
@@ -39,7 +39,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    validar_enderecos(arq, alg_pagina, alg_tlb);
+    int r = validar_enderecos(arq, alg_pagina, alg_tlb);
     fclose(arq);
+
+    if(r == -1){
+        return 1;
+    }
     return 0;
 }

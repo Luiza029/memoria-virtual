@@ -21,12 +21,12 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
         valor = strtol(pedaco, &fim, 10);
 
         if(fim == pedaco || *fim != '\0' || valor < 0 || valor > MAX){
-            printf("Erro: addresses.txt tem numero invalido na linha %d\n", numLinha);
+            printf("Erro: arquivo de enderecos tem numero invalido na linha %d\n", numLinha);
             return -1;
         }
 
         if(strtok(NULL, " \t\r\n") != NULL){
-            printf("Erro: Mais de um argumento na linha %d\n", numLinha);
+            printf("Erro: mais de um numero na linha %d\n", numLinha);
             return -1;
         }
 
@@ -65,6 +65,7 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
     FILE *saida = fopen("correct.txt", "w");
     if(saida == NULL){
         printf("Erro: arquivo correct.txt nao encontrado\n");
+        fclose(disco);
         return -1;
     }
 
@@ -214,7 +215,8 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
 
     fprintf(saida, "TLB Hits = %d\n", tlb_hits);
     fprintf(saida, "TLB Hit Rate = %.3f\n", (double) tlb_hits / count);
-
+    
+    fclose(saida);
     fclose(disco);
     return count;
 }

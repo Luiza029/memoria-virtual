@@ -30,6 +30,6 @@ make clean
 
 
 ## Sistema operacional
-DDesenvolvido e testado em **Ubuntu 26.04 LTS** rodando no **WSL2** (Windows 11), com **gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0** e GNU Make.
+Desenvolvido e testado em **Ubuntu 26.04 LTS** rodando no **WSL2** (Windows 11), com **gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0** e GNU Make.
 
 *Os arquivos `addresses.txt` e `BACKING_STORE.bin`, fornecidos pelo professor, precisam estar na mesma pasta do executável.*
