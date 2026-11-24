@@ -40,11 +40,10 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
     
     rewind(arq);
 
-    int pagina, offset, tlb_ocupado = 0, frame, proximo_frame = 0, page_fault = 0, 
-    fisico, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido, linhaTLB, 
-    fifoTLB = 0, tlb_hits = 0, dado;
+    int pagina, offset, frame, proximo_frame = 0, page_fault = 0, 
+    fisico, fifo = 0, pagina_antiga, relogio = 0, menor, escolhido, linhaTLB, tlb_hits = 0, dado;
 
-    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES], horas[NUM_FRAMES], horasTLB[TAM_TLB];
+    int tlb_paginas[TAM_TLB], tlb_frame[TAM_TLB], tabela_pagina[NUM_PAGINAS], etiqueta[NUM_FRAMES], horas[NUM_FRAMES], horasTLB[TAM_TLB], entradaTLB[TAM_TLB];;
     signed char memoria[TAM_PAGINA * NUM_FRAMES];
 
     for(int i=0; i<NUM_PAGINAS; i++){
@@ -81,19 +80,6 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
 
         pagina = valor / 256;
         offset = valor % 256;
-
-        /*
-        for(int i=0; i<tlb_ocupado; i++){
-            if(tlb_paginas[i] == pagina){
-                posicao_tlb = i;
-                frame = tlb_frame[i];
-                tlb_hits++;
-                relogio++;
-                horasTLB[i] = relogio;
-                break;
-            }
-        }
-        */
 
         pthread_t threads[TAM_TLB];
         TLB bilhetes[TAM_TLB];
@@ -168,28 +154,35 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
                 fread(&memoria[frame * 256], 1, 256, disco);
             }
 
-            if(tlb_ocupado < TAM_TLB){
-                linhaTLB = tlb_ocupado;
-                tlb_ocupado++;
+            linhaTLB = -1;
+            for(int i=0; i<TAM_TLB; i++){
+                if(tlb_paginas[i] == -1){
+                    linhaTLB = i;
+                    break;
+                }
             }
 
-            else{
+            if(linhaTLB == -1){
                 if(alg_tlb == FIFO){
-                    linhaTLB = fifoTLB;
-                    fifoTLB = (fifoTLB + 1) % TAM_TLB;
+                    menor = entradaTLB[0];
+                    escolhido = 0;
+                    for(int i=0; i<TAM_TLB; i++){
+                        if(entradaTLB[i] < menor){
+                            menor = entradaTLB[i];
+                            escolhido = i;
+                        }
+                    }
+                    linhaTLB = escolhido;
                 }
-
                 else{
                     menor = horasTLB[0];
                     escolhido = 0;
-
                     for(int i=0; i<TAM_TLB; i++){
                         if(horasTLB[i] < menor){
                             menor = horasTLB[i];
                             escolhido = i;
                         }
                     }
-
                     linhaTLB = escolhido;
                 }
             }
@@ -197,6 +190,7 @@ int validar_enderecos(FILE *arq, int alg_pagina, int alg_tlb){
             tlb_paginas[linhaTLB] = pagina;
             tlb_frame[linhaTLB] = frame;
             horasTLB[linhaTLB] = relogio;
+            entradaTLB[linhaTLB] = relogio;
             posicao_tlb = linhaTLB;
         }
 
